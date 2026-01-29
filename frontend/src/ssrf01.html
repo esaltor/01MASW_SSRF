@@ -37,8 +37,22 @@
       </div>
     </nav>
     <!-- Contenido de la página -->
-    <div class="container mt-4">
-      <h1 class="text-white">Primer ejemplo de vulnerabilidad SSRF</h1>
+    <div class="container" style="margin-top: 80px;"></div>
+        <!-- Agrega un grid de dos columnas -->
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Agregamos un botón para obtener los carteles -->
+                    <button class="btn btn-primary" onclick="get_carteles()">Obtener Carteles</button>  
+                    <!-- Mostramos los carteles en un desplegable -->
+                    <div id="carteles-list" class="mt-3"></div>
+                </div>
+                <div class="col-md-6">
+                    <!-- Mostramos un cartel-->
+                    <div id="cartel" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="index.js"></script>
     <!-- Agrega scripts de bootstrap -->
