@@ -53,6 +53,19 @@ async def list_carteles():
 
 
 # Ruta que devuelve un cartel a partir de su nombre con método post
+# Se valida el nombre del fichero para evitar SSRF
+@app.post("/cartelesvalidado")
+async def post_cartel(cartel: Cartel):
+    # Validar la ruta del archivo
+    if ".." in cartel.name or "/" in cartel.name or "\\" in cartel.name:
+        return {"error": "Invalid file name"}
+    cartel_path = os.path.join("carteles", cartel.name)
+    if os.path.isfile(cartel_path):
+        return FileResponse(cartel_path)
+    else:
+        return {"error": "Cartel not found"}
+    
+# Ruta que devuelve un cartel a partir de su nombre con método post
 # No se valida el nombre del fichero para demostrar SSRF
 @app.post("/carteles")
 async def post_cartel(cartel: Cartel):
