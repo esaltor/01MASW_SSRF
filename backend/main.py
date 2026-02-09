@@ -1,12 +1,13 @@
-from typing import Union
+from typing import Annotated, Union
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse
 from pathlib import Path
 import os
 from pydantic import BaseModel
 from sqlalchemy import create_engine,text
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from fastapi import FastAPI
 
@@ -16,6 +17,17 @@ class Cartel(BaseModel):
 # Conexion a la base de datos SQLite
 DATABASE_URL = "sqlite:///./sql/test.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+# Crear un nuevo modelo para representar un usuario
+class User(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    name: str
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 app = FastAPI()
 
@@ -101,6 +113,7 @@ async def get_users():
 async def get_user(user_id: Union[int, str]):
     try:
         #query = text("SELECT * FROM user WHERE id = :user_id")
+        #1' OR '1'='1'---
         query = text(f"SELECT * FROM user WHERE id = {user_id}")
         with engine.connect() as connection:
             #result = connection.execute(query, {"user_id": user_id})
@@ -110,5 +123,28 @@ async def get_user(user_id: Union[int, str]):
             # Convertir los resultados a una lista de diccionarios
             users_list = [dict(row) for row in user]
             return {"users": users_list}
+    except Exception as e:
+        return {"error": "Could not fetch user"}ç
+    
+# Crea un nuevo endpoint que lea los usuarios desde la base de datos utilizando SQLModel y devuelva el resultado
+@app.get("/users_sqlmodel")
+async def get_users_sqlmodel(session: SessionDep):
+    try:
+        users = session.exec(select(User)).all()
+        users_list = [user.dict() for user in users]
+        return {"users": users_list}
+    except Exception as e:
+        return {"error": "Could not fetch users"}
+    
+# Devolver un usuario por su id utilizando SQLModel
+@app.get("/user_sqlmodel/{user_id}")
+async def get_user_sqlmodel(user_id: int, session: SessionDep):
+    try:
+        user = session.get(User, user_id)
+        if user:
+            user_dict = user.dict()
+            return {"user": [user_dict]}
+        else:
+            return {"error": "User not found"}
     except Exception as e:
         return {"error": "Could not fetch user"}
