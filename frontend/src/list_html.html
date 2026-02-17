@@ -1,0 +1,18 @@
+<script>
+    // Función para obtener las asistencias del backend del endpoint localhost:8000/asistencias_html
+    // y mostrar el resultado directamente en la página ya que es html
+    function obtenerAsistencias() {
+        fetch('http://localhost:8000/asistencias_html')
+         .then(response => response.text())
+         .then(html => {
+            // Insertar el HTML recibido directamente en la página
+            document.write(html);
+         })
+         .catch(error => {
+             console.error('Error al obtener las asistencias:', error);
+         });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', obtenerAsistencias);
+    }
+</script>

@@ -1,5 +1,5 @@
 from typing import Annotated, Union
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse
@@ -22,6 +22,12 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 class User(SQLModel, table=True):
     id: int = Field(primary_key=True)
     name: str
+
+# Crear un nuevo modelo para representar una asistencia
+class Asistencia(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    nombre: str
+    comentario: str
 
 def get_session():
     with Session(engine) as session:
@@ -124,7 +130,7 @@ async def get_user(user_id: Union[int, str]):
             users_list = [dict(row) for row in user]
             return {"users": users_list}
     except Exception as e:
-        return {"error": "Could not fetch user"}ç
+        return {"error": "Could not fetch user"}
     
 # Crea un nuevo endpoint que lea los usuarios desde la base de datos utilizando SQLModel y devuelva el resultado
 @app.get("/users_sqlmodel")
@@ -148,3 +154,42 @@ async def get_user_sqlmodel(user_id: int, session: SessionDep):
             return {"error": "User not found"}
     except Exception as e:
         return {"error": "Could not fetch user"}
+    
+
+# Añadir un nuevo endpoint donde se hace insert con SQLmodel de una nueva asistencia a las base de datos
+@app.post("/asistencia")
+async def add_asistencia(asistencia: Asistencia, session: SessionDep):
+    try:
+        nueva_asistencia = Asistencia(nombre=asistencia.nombre, comentario=asistencia.comentario)
+        session.add(nueva_asistencia)
+        session.commit()
+        session.refresh(nueva_asistencia)
+        return {"asistencia": nueva_asistencia.dict()}
+    except Exception as e:
+        return {"error": "Could not add asistencia"}
+    
+
+# Añadir un nuevo endpoint donde se liste todas las asistencias de la base de datos utilizando SQLModel
+@app.get("/asistencias")
+async def get_asistencias(session: SessionDep):
+    try:
+        asistencias = session.exec(select(Asistencia)).all()
+        asistencias_list = [asistencia.dict() for asistencia in asistencias]
+        return {"asistencias": asistencias_list}
+    except Exception as e:
+        return {"error": "Could not fetch asistencias"} 
+
+# Añadir un nuevo endpoint donde se liste todas las asistencias de la base de datos utilizando SQLModel 
+# pero se devuelve el resultado en html en lugar de json
+@app.get("/asistencias_html")
+async def get_asistencias_html(session: SessionDep):
+    try:
+        asistencias = session.exec(select(Asistencia)).all()
+        asistencias_list = [asistencia.dict() for asistencia in asistencias]
+        html_content = "<html><body><h1>Asistencias</h1><ul>"
+        for asistencia in asistencias_list:
+            html_content += f"<li>{asistencia['nombre']}: {asistencia['comentario']}</li>"
+        html_content += "</ul></body></html>"
+        return HTMLResponse(content=html_content, status_code=200)
+    except Exception as e:
+        return {"error": "Could not fetch asistencias"} 
