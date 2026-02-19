@@ -1,10 +1,15 @@
 from typing import Annotated, Union
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
+from urllib.parse import urlparse
 import os
+import requests
+import socket
+import ipaddress
+from bs4 import BeautifulSoup
 from pydantic import BaseModel
 from sqlalchemy import create_engine,text
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -57,7 +62,7 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 # Endpoint GET /carteles que devuelve en formato JSON una lista con los nombres de los archivos
 # de la carpeta 'carteles' ubicada en el directorio /carteles del servidor.
-# utilizando la clase os y sin comprobqar si la carpeta existe o no.
+# utilizando la clase os y sin comprobar si la carpeta existe o no.
 @app.get("/cartelesv2")
 def get_carteles():
     carteles_dir = Path("carteles")
@@ -97,7 +102,73 @@ async def post_cartel(cartel: Cartel):
         return FileResponse(cartel_path)
     else:
         return {"error": "Cartel not found"}
-    
+
+# Endpoint para generar la vista previa de un enlace. Recibe una URL 
+# y devuelve un JSON con el título de la página y una imagen de vista previa
+# Sin validaciones para demostrar SSRF.
+@app.get("/preview")
+def preview(url: str):
+    response = requests.get(url)
+
+    # Si devuelve HTML intentamos sacar el título
+    if "text/html" in response.headers.get("content-type", ""):
+        soup = BeautifulSoup(response.text, "html.parser")
+        title = soup.title.string if soup.title else "No title found"
+        return {"type": "html", "data": title}
+
+    # Si devuelve JSON lo pasamos tal cual
+    if "application/json" in response.headers.get("content-type", ""):
+        return {"type": "json", "data": response.json()}
+
+    return {"type": "raw", "data": response.text}
+
+# Endpoint para generar la vista previa de un enlace con validaciones para evitar SSRF.
+# Recibe una URL y devuelve un JSON con el título de la página y una imagen de vista previa
+@app.get("/previewvalidado")
+def preview(url: str):
+    parsed = urlparse(url)
+
+    # Validar esquema
+    if parsed.scheme not in ["http", "https"]:
+        raise HTTPException(status_code=400, detail="Esquema inválido")
+
+    # Bloquear IPs privadas o localhost
+    if is_private(parsed.hostname):
+        raise HTTPException(status_code=403, detail="Acceso a red interna prohibido")
+
+    # Solicitar contenido seguro
+    response = requests.get(url, timeout=5)
+
+    # Procesar HTML para mostrar título
+    if "text/html" in response.headers.get("content-type", ""):
+        soup = BeautifulSoup(response.text, "html.parser")
+        title = soup.title.string if soup.title else "No title found"
+        return {"type": "html", "data": title}
+
+    # Procesar JSON
+    if "application/json" in response.headers.get("content-type", ""):
+        return {"type": "json", "data": response.json()}
+
+    # Otros contenidos
+    return {"type": "raw", "data": response.text}
+
+# Función para comprobar si un hostname es privado o no utilizando la librería ipaddress y socket
+def is_private(hostname):
+    try:
+        ip = socket.gethostbyname(hostname)
+        return ipaddress.ip_address(ip).is_private
+    except:
+        return True  # Si no se puede resolver, asumimos privada
+
+# Endpoint interno (no expuesto en frontend)
+@app.get("/admin")
+def admin():
+    return {
+        "database_password": "SuperSecret123",
+        "api_key": "ADMIN-KEY-456",
+        "internal_service": "http://10.0.0.5:5000"
+    }
+
 # Endpoint que devuelva todos los usuarios de la base de datos SQLite
 # usando SQLAlchemy y sin validación de entrada para demostrar SQL Injection
 @app.get("/users")

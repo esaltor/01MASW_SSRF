@@ -59,3 +59,49 @@ function solicitar_cartel(nombre_cartel) {
         console.error('Error al solicitar el cartel:', error);
     });
 }
+
+
+// Funcion previewUrl que envía al backend la URL introducida en el input con id="urlInput" y muestra la respuesta en un div con id="preview"
+async function previewUrl(validado) {
+    const url = document.getElementById("urlInput").value;
+
+    const endpoint = validado ? 'previewvalidado' : 'preview';
+
+    try {
+        const response = await fetch(`http://localhost:8000/${endpoint}?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+
+        const resultDiv = document.getElementById("result");
+
+        if (!response.ok) {
+            resultDiv.innerHTML = `
+                <div class="card danger">
+                    <h3>⚠ Error:</h3>
+                    <p>${data.detail || "Error desconocido"}</p>
+                </div>
+            `;
+            return;
+        }
+
+        if (data.type === "html") {
+            resultDiv.innerHTML = `
+                <div class="card">
+                    <h3>Título detectado:</h3>
+                    <p>${data.data}</p>
+                </div>
+            `;
+        }
+
+        if (data.type === "json") {
+            resultDiv.innerHTML = `
+                <div class="card danger">
+                    <h3>⚠ Datos internos obtenidos:</h3>
+                    <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
