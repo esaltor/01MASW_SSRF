@@ -11,7 +11,7 @@ function getUser() {
             let userStr = "";
             console.log(data);
             data.users.forEach(element => {
-                userStr = userStr + `ID: ${element.id} <br> Nombre: ${element.name} <br> `;
+                userStr = userStr + `ID: ${element.id} <br> Nombre: ${element.nombre} <br> `;
             });
             resultadoDiv.innerHTML = userStr
         })
@@ -42,3 +42,46 @@ function getUserSQLmodel() {
         });
 }
 
+
+async function login() {
+    await sendLoginRequest("/login");
+}
+
+async function loginSafe() {
+    await sendLoginRequest("/loginvalidado");
+}
+
+// Funcion sendLoginRequest que envía al backend el usuario y contraseña 
+// introducidos en los inputs con id="username" y id="password" respectivamente, 
+// y muestra la respuesta en un div con id="result"
+async function sendLoginRequest(endpoint) {
+
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const resultDiv = document.getElementById("result");
+
+    resultDiv.innerHTML = "Cargando...";
+
+    try {
+        const response = await fetch(`http://localhost:8000${endpoint}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Error en el login");
+        }
+
+        resultDiv.style.color = "green";
+        resultDiv.innerHTML = `Bienvenida ${data.user}`;
+
+    } catch (error) {
+        resultDiv.style.color = "red";
+        resultDiv.innerHTML = error.message;
+    }
+}

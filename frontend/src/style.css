@@ -14,3 +14,62 @@ body {
     background-color: #ffe6e6;
     border: 1px solid red;
 }
+
+
+.container-form {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    width: 350px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.container-form h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.container-form .form-group {
+    margin-bottom: 20px;
+}
+
+.container-form label {
+    font-size: 14px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.container-form input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.container-form button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    margin-top: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #2c3e50;
+    color: white;
+    transition: 0.2s ease;
+}
+
+.container-form button:hover {
+    opacity: 0.9;
+}
+
+.container-form button.safe {
+    background-color: #27ae60;
+}
+
+.container-form #result {
+    margin-top: 20px;
+    text-align: center;
+    font-weight: bold;
+}

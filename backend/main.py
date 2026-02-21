@@ -34,6 +34,11 @@ class Asistencia(SQLModel, table=True):
     nombre: str
     comentario: str
 
+# Crear un modelo para representar la petición de login
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 def get_session():
     with Session(engine) as session:
         yield session
@@ -168,6 +173,68 @@ def admin():
         "api_key": "ADMIN-KEY-456",
         "internal_service": "http://10.0.0.5:5000"
     }
+
+# Endpoint de login que recibe un username y password y devuelve un mensaje de éxito o error
+@app.post("/login")
+async def login(data: LoginRequest):
+
+    try:
+        # VULNERABLE: concatenación directa
+        query = f"SELECT * FROM users WHERE username = '{data.username}' AND password = '{data.password}'"
+        print("QUERY EJECUTADA:", query)
+
+        with engine.connect() as connection:
+            result = connection.execute(text(query))
+            user = result.mappings().first()
+
+        if user:
+            return {
+                "message": "Login correcto",
+                "user": user["username"],
+                "role": user["role"]
+            }
+        else:
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
+
+@app.post("/loginvalidado")
+async def loginvalidado(data: LoginRequest):
+
+    # Validación básica
+    if not data.username or not data.password:
+        raise HTTPException(
+            status_code=400,
+            detail="Usuario y contraseña son obligatorios"
+        )
+
+    try:
+        # Consulta parametrizada
+        query = text("SELECT * FROM users WHERE username = :username AND password = :password")
+
+        with engine.connect() as connection:
+            result = connection.execute(query, {
+                "username": data.username,
+                "password": data.password
+            })
+            # Imprimir la consulta ejecutada para demostrar que se ha parametrizado correctamente
+            print("QUERY EJECUTADA:", query.compile(compile_kwargs={"literal_binds": True}))
+
+            user = result.mappings().first()
+            print("USUARIO ENCONTRADO:", user)
+
+        if user:
+            return {
+                "message": "Login correcto",
+                "user": user["username"],
+                "role": user["role"]
+            }
+        else:
+            raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
 # Endpoint que devuelva todos los usuarios de la base de datos SQLite
 # usando SQLAlchemy y sin validación de entrada para demostrar SQL Injection
