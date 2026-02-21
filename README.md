@@ -22,6 +22,17 @@ La aplicación desarrollada simula una herramienta de “vista previa de enlaces
 
 ---
 
+En cuanto a **SQL Injection** el objetivo ha sido:
+
+- Implementar una funcionalidad de autenticación conectada a una base de datos.
+- Introducir intencionadamente una vulnerabilidad SQL Injection en el backend.
+- Demostrar su explotación mediante manipulación de la consulta.
+- Implementar posteriormente una solución segura utilizando consultas parametrizadas.
+
+La aplicación desarrollada incluye un formulario de **login**, donde el usuario introduce su nombre de usuario y contraseña para autenticarse contra una base de datos SQLite.
+
+---
+
 ## 2. Requisitos previos
 
 Antes de comenzar, asegúrate de tener instalado:
